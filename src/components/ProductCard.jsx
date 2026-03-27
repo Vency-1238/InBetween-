@@ -1,9 +1,15 @@
 import { useShop } from '../context/ShopContext'
+import {
+  getProductLaunchBadgeText,
+  getProductLaunchPrice,
+  toInteger,
+} from '../lib/constants'
 
 export default function ProductCard({ product }) {
   const { addToCart, addToWishlist } = useShop()
-  const launchPrice = 339
-  const mrp = 449
+  const launchPrice = getProductLaunchPrice(product)
+  const mrp = Math.max(0, toInteger(product?.mrp, 0))
+  const launchBadgeText = getProductLaunchBadgeText(product)
 
   return (
     <article className="group rounded-2xl border border-beige-300 bg-cream-100 p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-soft-lg sm:p-5">
@@ -28,9 +34,11 @@ export default function ProductCard({ product }) {
         {product.description}
       </p>
 
-      <div className="mt-4 inline-flex rounded-full bg-beige-200 px-4 py-1 text-xs font-medium text-bark-800">
-        Launch Offer – 10% OFF
-      </div>
+      {launchBadgeText && (
+        <div className="mt-4 inline-flex rounded-full bg-beige-200 px-4 py-1 text-xs font-medium text-bark-800">
+          {launchBadgeText}
+        </div>
+      )}
 
       <div className="mt-3 flex items-end gap-3">
         <span className="text-3xl font-bold text-bark-900">₹{launchPrice}</span>
