@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ProductCard from './ProductCard'
 import { fetchAllProducts } from '../services/products'
 import { hasAppwriteConfig } from '../lib/appwrite'
+import { subscribeProductsChanged } from '../lib/productSync'
 
 export default function Collection() {
   const [products, setProducts] = useState([])
@@ -12,10 +13,15 @@ export default function Collection() {
     let mounted = true
 
     async function loadProducts() {
+      if (mounted) {
+        setLoading(true)
+      }
+
       try {
         const data = await fetchAllProducts()
         if (mounted) {
           setProducts(data)
+          setError('')
         }
       } catch (loadError) {
         if (mounted) {
@@ -29,9 +35,11 @@ export default function Collection() {
     }
 
     loadProducts()
+    const unsubscribe = subscribeProductsChanged(loadProducts)
 
     return () => {
       mounted = false
+      unsubscribe()
     }
   }, [])
 

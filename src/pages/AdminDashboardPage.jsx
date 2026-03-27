@@ -8,6 +8,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from '../services/products'
+import { notifyProductsChanged } from '../lib/productSync'
 import { toInteger } from '../lib/constants'
 
 const emptyForm = {
@@ -127,6 +128,7 @@ export default function AdminDashboardPage() {
 
       setForm(emptyForm)
       setEditingId('')
+      notifyProductsChanged()
       await loadProducts()
     } catch (submitError) {
       setError(submitError.message || 'Unable to save product.')
@@ -157,6 +159,7 @@ export default function AdminDashboardPage() {
       await removeProduct(product.$id)
       await deleteProductImage(product.imageId).catch(() => null)
       setFeedback('Product deleted successfully.')
+      notifyProductsChanged()
       await loadProducts()
     } catch (deleteError) {
       setError(deleteError.message || 'Unable to delete product.')
