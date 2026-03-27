@@ -54,6 +54,10 @@ export function ShopProvider({ children }) {
     setCartItems((prev) => prev.filter((item) => item.$id !== productId))
   }
 
+  const clearCart = () => {
+    setCartItems([])
+  }
+
   const addToWishlist = (product) => {
     setWishlistItems((prev) => {
       if (prev.some((item) => item.$id === product.$id)) {
@@ -80,6 +84,7 @@ export function ShopProvider({ children }) {
     addToCart,
     updateCartItem,
     removeFromCart,
+    clearCart,
     addToWishlist,
     removeFromWishlist,
   }

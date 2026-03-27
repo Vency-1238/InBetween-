@@ -8,6 +8,7 @@ import CartPage from './pages/CartPage'
 import WishlistPage from './pages/WishlistPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import ProductDetailPage from './pages/ProductDetailPage'
 import Footer from './components/Footer'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
               <Route element={<AdminRoute />}>
