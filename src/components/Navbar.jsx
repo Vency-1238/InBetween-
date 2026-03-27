@@ -14,7 +14,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 border-b border-beige-300/80 bg-cream-100/90 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Link to="/" className="font-serif text-3xl leading-none text-bark-900">
-          InBetween Candles
+          In Between
         </Link>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5 text-sm sm:gap-2 sm:text-base">

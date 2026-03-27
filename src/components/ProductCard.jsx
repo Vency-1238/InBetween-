@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useShop } from '../context/ShopContext'
 import {
   getProductLaunchBadgeText,
@@ -6,6 +7,7 @@ import {
 } from '../lib/constants'
 
 export default function ProductCard({ product }) {
+  const navigate = useNavigate()
   const { addToCart, addToWishlist } = useShop()
   const launchPrice = getProductLaunchPrice(product)
   const mrp = Math.max(0, toInteger(product?.mrp, 0))
@@ -13,7 +15,10 @@ export default function ProductCard({ product }) {
 
   return (
     <article className="group rounded-2xl border border-beige-300 bg-cream-100 p-4 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-soft-lg sm:p-5">
-      <div className="mb-4 overflow-hidden rounded-xl bg-beige-200">
+      <div 
+        className="mb-4 overflow-hidden rounded-xl bg-beige-200 cursor-pointer"
+        onClick={() => navigate(`/product/${product.$id}`)}
+      >
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -27,7 +32,10 @@ export default function ProductCard({ product }) {
         )}
       </div>
 
-      <h3 className="font-serif text-2xl leading-tight text-bark-900 break-words">
+      <h3 
+        className="font-serif text-2xl leading-tight text-bark-900 break-words cursor-pointer transition hover:text-bark-700"
+        onClick={() => navigate(`/product/${product.$id}`)}
+      >
         {product.name}
       </h3>
       <p className="mt-2 min-h-14 overflow-hidden text-sm leading-6 text-bark-700 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] break-words">
