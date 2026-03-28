@@ -398,6 +398,9 @@ export default function AdminDashboardPage() {
                     <span className="font-semibold text-bark-900">Address:</span> {order.address}, {order.city}, {order.state}
                   </p>
                   <p>
+                    <span className="font-semibold text-bark-900">Pincode:</span> {order.pincode}
+                  </p>
+                  <p>
                     <span className="font-semibold text-bark-900">UPI ID:</span> {order.customerUpiId}
                   </p>
                   <p>

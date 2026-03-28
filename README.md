@@ -38,6 +38,7 @@ Create these resources in Appwrite:
   - `contactNumber` (string)
   - `city` (string)
   - `state` (string)
+  - `pincode` (string)
   - `orderNote` (string, optional)
   - `customerUpiId` (string)
   - `paymentUtr` (string)

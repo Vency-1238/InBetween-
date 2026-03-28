@@ -55,6 +55,7 @@ export async function createOrder(orderInput) {
     contactNumber: orderInput.contactNumber,
     city: orderInput.city,
     state: orderInput.state,
+    pincode: orderInput.pincode,
     orderNote: orderInput.orderNote || '',
     customerUpiId: orderInput.customerUpiId,
     paymentUtr: orderInput.paymentUtr,
