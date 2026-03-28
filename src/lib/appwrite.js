@@ -5,6 +5,7 @@ const projectId = import.meta.env.VITE_APPWRITE_PROJECT_ID
 
 export const databaseId = import.meta.env.VITE_DATABASE_ID
 export const collectionId = import.meta.env.VITE_COLLECTION_ID
+export const ordersCollectionId = import.meta.env.VITE_ORDERS_COLLECTION_ID
 export const bucketId = import.meta.env.VITE_BUCKET_ID
 
 export const hasAppwriteConfig =

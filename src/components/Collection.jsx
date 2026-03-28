@@ -36,7 +36,7 @@ export default function Collection() {
     }
   }, [])
 
-  const displayProducts = products.slice(0, 3)
+  const displayProducts = products
 
   return (
     <section className="w-full space-y-0 pb-0">

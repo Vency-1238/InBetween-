@@ -8,7 +8,7 @@ function linkClass({ isActive }) {
 }
 
 export default function Navbar() {
-  const { cartCount, wishlistItems } = useShop()
+  const { cartCount, wishlistItems, myOrdersCount } = useShop()
 
   return (
     <header className="sticky top-0 z-30 border-b border-beige-300/80 bg-cream-100/90 backdrop-blur">
@@ -26,6 +26,9 @@ export default function Navbar() {
           </NavLink>
           <NavLink to="/cart" className={linkClass}>
             Cart ({cartCount})
+          </NavLink>
+          <NavLink to="/my-orders" className={linkClass}>
+            My Orders ({myOrdersCount})
           </NavLink>
           <NavLink to="/admin/login" className={linkClass}>
             Admin

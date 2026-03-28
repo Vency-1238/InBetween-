@@ -6,6 +6,7 @@ import { AdminAuthProvider } from './context/AdminAuthContext'
 import HomePage from './pages/HomePage'
 import CartPage from './pages/CartPage'
 import WishlistPage from './pages/WishlistPage'
+import MyOrdersPage from './pages/MyOrdersPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import ProductDetailPage from './pages/ProductDetailPage'
@@ -28,6 +29,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/my-orders" element={<MyOrdersPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
