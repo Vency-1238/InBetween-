@@ -9,6 +9,7 @@ const emptyCustomerForm = {
   contactNumber: '',
   city: '',
   state: '',
+  pincode: '',
   orderNote: '',
 }
 
@@ -40,16 +41,22 @@ export default function CartPage() {
     const contactNumber = customerForm.contactNumber.trim()
     const city = customerForm.city.trim()
     const state = customerForm.state.trim()
+    const pincode = customerForm.pincode.trim()
     const trimmedCustomerUpiId = customerUpiId.trim()
     const isValidUpi = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(trimmedCustomerUpiId)
 
-    if (!fullName || !address || !contactNumber || !city || !state) {
-      setUpiError('Please fill full name, address, contact number, city, and state.')
+    if (!fullName || !address || !contactNumber || !city || !state || !pincode) {
+      setUpiError('Please fill full name, address, contact number, city, state, and pincode.')
       return
     }
 
     if (!/^\d{10,14}$/.test(contactNumber)) {
       setUpiError('Enter a valid contact number (10 to 14 digits).')
+      return
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+      setUpiError('Enter a valid 6-digit pincode.')
       return
     }
 
@@ -103,6 +110,7 @@ export default function CartPage() {
         contactNumber: customerForm.contactNumber.trim(),
         city: customerForm.city.trim(),
         state: customerForm.state.trim(),
+        pincode: customerForm.pincode.trim(),
         orderNote: customerForm.orderNote.trim(),
         customerUpiId: customerUpiId.trim(),
         paymentUtr: trimmedUtr,
@@ -261,6 +269,19 @@ export default function CartPage() {
                       setCustomerForm((prev) => ({ ...prev, state: event.target.value }))
                     }
                     placeholder="Enter state"
+                    className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                  />
+                </label>
+
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-bark-700">Pincode</span>
+                  <input
+                    type="text"
+                    value={customerForm.pincode}
+                    onChange={(event) =>
+                      setCustomerForm((prev) => ({ ...prev, pincode: event.target.value }))
+                    }
+                    placeholder="Enter 6-digit pincode"
                     className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
                   />
                 </label>

@@ -43,6 +43,9 @@ export default function MyOrdersPage() {
                 <p className="sm:col-span-2">
                   <span className="font-semibold text-bark-900">Address:</span> {order.address}, {order.city}, {order.state}
                 </p>
+                <p>
+                  <span className="font-semibold text-bark-900">Pincode:</span> {order.pincode}
+                </p>
                 {order.orderNote ? (
                   <p className="sm:col-span-2">
                     <span className="font-semibold text-bark-900">Order Note:</span> {order.orderNote}
