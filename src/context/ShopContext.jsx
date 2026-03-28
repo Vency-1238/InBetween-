@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const CART_KEY = 'candle-cart-items'
 const WISHLIST_KEY = 'candle-wishlist-items'
+const ORDERS_KEY = 'candle-my-orders'
 
 const ShopContext = createContext(null)
 
@@ -17,6 +18,7 @@ function readStorage(key, fallback) {
 export function ShopProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => readStorage(CART_KEY, []))
   const [wishlistItems, setWishlistItems] = useState(() => readStorage(WISHLIST_KEY, []))
+  const [myOrders, setMyOrders] = useState(() => readStorage(ORDERS_KEY, []))
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(cartItems))
@@ -25,6 +27,10 @@ export function ShopProvider({ children }) {
   useEffect(() => {
     localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlistItems))
   }, [wishlistItems])
+
+  useEffect(() => {
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(myOrders))
+  }, [myOrders])
 
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -72,21 +78,30 @@ export function ShopProvider({ children }) {
     setWishlistItems((prev) => prev.filter((item) => item.$id !== productId))
   }
 
+  const addToMyOrders = (order) => {
+    setMyOrders((prev) => [order, ...prev])
+  }
+
   const cartCount = useMemo(
     () => cartItems.reduce((total, item) => total + item.quantity, 0),
     [cartItems],
   )
 
+  const myOrdersCount = useMemo(() => myOrders.length, [myOrders])
+
   const value = {
     cartItems,
     wishlistItems,
+    myOrders,
     cartCount,
+    myOrdersCount,
     addToCart,
     updateCartItem,
     removeFromCart,
     clearCart,
     addToWishlist,
     removeFromWishlist,
+    addToMyOrders,
   }
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>

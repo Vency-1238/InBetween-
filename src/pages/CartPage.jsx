@@ -1,9 +1,20 @@
 import { useState } from 'react'
 import { getProductLaunchPrice } from '../lib/constants'
 import { useShop } from '../context/ShopContext'
+import { createOrder } from '../services/orders'
+
+const emptyCustomerForm = {
+  fullName: '',
+  address: '',
+  contactNumber: '',
+  city: '',
+  state: '',
+  orderNote: '',
+}
 
 export default function CartPage() {
-  const { cartItems, updateCartItem, removeFromCart, clearCart } = useShop()
+  const { cartItems, updateCartItem, removeFromCart, clearCart, addToMyOrders } = useShop()
+  const [customerForm, setCustomerForm] = useState(emptyCustomerForm)
   const [customerUpiId, setCustomerUpiId] = useState('')
   const [upiError, setUpiError] = useState('')
   const [paymentInitiated, setPaymentInitiated] = useState(false)
@@ -11,6 +22,7 @@ export default function CartPage() {
   const [pendingOrderId, setPendingOrderId] = useState('')
   const [orderStatus, setOrderStatus] = useState('idle')
   const [orderId, setOrderId] = useState('')
+  const [placingOrder, setPlacingOrder] = useState(false)
 
   const receiverUpiId = import.meta.env.VITE_UPI_RECEIVER_ID || 'vency1238@okaxis'
   const receiverUpiName = import.meta.env.VITE_UPI_RECEIVER_NAME || 'In Between'
@@ -22,8 +34,24 @@ export default function CartPage() {
 
   function handleUpiPayment(event) {
     event.preventDefault()
+
+    const fullName = customerForm.fullName.trim()
+    const address = customerForm.address.trim()
+    const contactNumber = customerForm.contactNumber.trim()
+    const city = customerForm.city.trim()
+    const state = customerForm.state.trim()
     const trimmedCustomerUpiId = customerUpiId.trim()
     const isValidUpi = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(trimmedCustomerUpiId)
+
+    if (!fullName || !address || !contactNumber || !city || !state) {
+      setUpiError('Please fill full name, address, contact number, city, and state.')
+      return
+    }
+
+    if (!/^\d{10,14}$/.test(contactNumber)) {
+      setUpiError('Enter a valid contact number (10 to 14 digits).')
+      return
+    }
 
     if (!isValidUpi) {
       setUpiError('Please enter your valid UPI ID (example: name@bank).')
@@ -55,7 +83,7 @@ export default function CartPage() {
     window.location.href = upiUrl
   }
 
-  function handleConfirmPayment(event) {
+  async function handleConfirmPayment(event) {
     event.preventDefault()
     const trimmedUtr = paymentUtr.trim()
 
@@ -64,12 +92,37 @@ export default function CartPage() {
       return
     }
 
+    setPlacingOrder(true)
     setUpiError('')
-    setOrderId(pendingOrderId)
-    setOrderStatus('success')
-    setPaymentInitiated(false)
-    setPaymentUtr('')
-    clearCart()
+
+    try {
+      const savedOrder = await createOrder({
+        orderCode: pendingOrderId,
+        fullName: customerForm.fullName.trim(),
+        address: customerForm.address.trim(),
+        contactNumber: customerForm.contactNumber.trim(),
+        city: customerForm.city.trim(),
+        state: customerForm.state.trim(),
+        orderNote: customerForm.orderNote.trim(),
+        customerUpiId: customerUpiId.trim(),
+        paymentUtr: trimmedUtr,
+        totalAmount: total,
+        items: cartItems,
+      })
+
+      addToMyOrders(savedOrder)
+      setOrderId(pendingOrderId)
+      setOrderStatus('success')
+      setPaymentInitiated(false)
+      setPaymentUtr('')
+      setCustomerUpiId('')
+      setCustomerForm(emptyCustomerForm)
+      clearCart()
+    } catch (saveError) {
+      setUpiError(saveError.message || 'Unable to save your order. Please try again.')
+    } finally {
+      setPlacingOrder(false)
+    }
   }
 
   return (
@@ -147,6 +200,86 @@ export default function CartPage() {
 
             <form className="mt-5 space-y-3" onSubmit={handleUpiPayment}>
               <label className="block">
+                <span className="mb-1 block text-sm font-medium text-bark-700">Full Name</span>
+                <input
+                  type="text"
+                  value={customerForm.fullName}
+                  onChange={(event) =>
+                    setCustomerForm((prev) => ({ ...prev, fullName: event.target.value }))
+                  }
+                  placeholder="Enter your full name"
+                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-bark-700">Address</span>
+                <textarea
+                  rows={3}
+                  value={customerForm.address}
+                  onChange={(event) =>
+                    setCustomerForm((prev) => ({ ...prev, address: event.target.value }))
+                  }
+                  placeholder="Enter full delivery address"
+                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-bark-700">Contact Number</span>
+                <input
+                  type="tel"
+                  value={customerForm.contactNumber}
+                  onChange={(event) =>
+                    setCustomerForm((prev) => ({ ...prev, contactNumber: event.target.value }))
+                  }
+                  placeholder="Enter your contact number"
+                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                />
+              </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-bark-700">City</span>
+                  <input
+                    type="text"
+                    value={customerForm.city}
+                    onChange={(event) =>
+                      setCustomerForm((prev) => ({ ...prev, city: event.target.value }))
+                    }
+                    placeholder="Enter city"
+                    className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-bark-700">State</span>
+                  <input
+                    type="text"
+                    value={customerForm.state}
+                    onChange={(event) =>
+                      setCustomerForm((prev) => ({ ...prev, state: event.target.value }))
+                    }
+                    placeholder="Enter state"
+                    className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                  />
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-bark-700">Order Note (optional)</span>
+                <textarea
+                  rows={2}
+                  value={customerForm.orderNote}
+                  onChange={(event) =>
+                    setCustomerForm((prev) => ({ ...prev, orderNote: event.target.value }))
+                  }
+                  placeholder="Any delivery note"
+                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                />
+              </label>
+
+              <label className="block">
                 <span className="mb-1 block text-sm font-medium text-bark-700">Your UPI ID</span>
                 <input
                   type="text"
@@ -185,9 +318,10 @@ export default function CartPage() {
                 </label>
                 <button
                   type="submit"
+                  disabled={placingOrder}
                   className="rounded-full bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
                 >
-                  Confirm Order
+                  {placingOrder ? 'Saving order...' : 'Confirm Order'}
                 </button>
               </form>
             )}

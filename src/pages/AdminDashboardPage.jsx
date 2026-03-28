@@ -8,6 +8,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from '../services/products'
+import { fetchAllOrders } from '../services/orders'
 import { notifyProductsChanged } from '../lib/productSync'
 import { toInteger } from '../lib/constants'
 
@@ -23,8 +24,11 @@ const emptyForm = {
 export default function AdminDashboardPage() {
   const { logout } = useAdminAuth()
   const [products, setProducts] = useState([])
+  const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
   const [error, setError] = useState('')
+  const [ordersError, setOrdersError] = useState('')
   const [feedback, setFeedback] = useState('')
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState('')
@@ -44,8 +48,23 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function loadOrders() {
+    setOrdersLoading(true)
+    setOrdersError('')
+
+    try {
+      const data = await fetchAllOrders()
+      setOrders(data)
+    } catch (loadError) {
+      setOrdersError(loadError.message || 'Unable to load orders.')
+    } finally {
+      setOrdersLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadProducts()
+    loadOrders()
   }, [])
 
   const submitLabel = useMemo(() => {
@@ -338,6 +357,68 @@ export default function AdminDashboardPage() {
                   >
                     Delete
                   </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-beige-300 bg-cream-100 p-5 shadow-soft sm:p-6">
+        <h2 className="font-serif text-2xl text-bark-900">Orders</h2>
+
+        {ordersLoading ? (
+          <p className="mt-4 text-bark-700">Loading orders...</p>
+        ) : ordersError ? (
+          <p className="mt-4 text-sm text-red-700">{ordersError}</p>
+        ) : orders.length === 0 ? (
+          <p className="mt-4 text-bark-700">No orders found.</p>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {orders.map((order) => (
+              <article key={order.$id} className="rounded-2xl border border-beige-300 bg-white p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-serif text-xl text-bark-900">Order {order.orderCode}</h3>
+                    <p className="text-xs text-bark-600">
+                      Placed: {new Date(order.$createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-bark-900">Rs. {order.totalAmount?.toFixed?.(2)}</p>
+                </div>
+
+                <div className="mt-3 grid gap-2 text-sm text-bark-700 sm:grid-cols-2">
+                  <p>
+                    <span className="font-semibold text-bark-900">Full Name:</span> {order.fullName}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-bark-900">Contact:</span> {order.contactNumber}
+                  </p>
+                  <p className="sm:col-span-2">
+                    <span className="font-semibold text-bark-900">Address:</span> {order.address}, {order.city}, {order.state}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-bark-900">UPI ID:</span> {order.customerUpiId}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-bark-900">UTR:</span> {order.paymentUtr}
+                  </p>
+                  {order.orderNote ? (
+                    <p className="sm:col-span-2">
+                      <span className="font-semibold text-bark-900">Order Note:</span> {order.orderNote}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 rounded-xl border border-beige-300 bg-cream-100 p-3">
+                  <h4 className="text-sm font-semibold text-bark-900">Items</h4>
+                  <ul className="mt-2 space-y-1 text-sm text-bark-700">
+                    {(order.items || []).map((item, index) => (
+                      <li key={`${order.$id}-${item.productId || index}`}>
+                        {item.name} x {item.quantity} (Rs. {item.unitPrice} each)
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </article>
             ))}
