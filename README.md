@@ -64,9 +64,24 @@ VITE_COLLECTION_ID=products
 VITE_ORDERS_COLLECTION_ID=orders
 VITE_BUCKET_ID=candle-images
 VITE_ADMIN_EMAIL=admin@example.com
+VITE_CASHFREE_ENV=sandbox
+CASHFREE_APP_ID=your_cashfree_test_app_id
+CASHFREE_SECRET_KEY=your_cashfree_test_secret_key
 ```
 
-Only `VITE_` prefixed variables are used in Vite frontend builds.
+Only `VITE_` prefixed variables are exposed to the browser. Keep `CASHFREE_SECRET_KEY` server-side only.
+
+## Cashfree Test Payment Setup
+
+- Frontend checkout opens Cashfree modal using `@cashfreepayments/cashfree-js`.
+- Serverless endpoints under `api/cashfree/` create and verify Cashfree orders securely.
+- Use `sandbox` for `VITE_CASHFREE_ENV` while testing.
+
+For local payment testing, run with Vercel dev so `/api/*` routes are available:
+
+```bash
+vercel dev
+```
 
 ## Local Development
 

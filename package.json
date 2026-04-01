@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cashfreepayments/cashfree-js": "^1.0.7",
     "appwrite": "^23.0.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

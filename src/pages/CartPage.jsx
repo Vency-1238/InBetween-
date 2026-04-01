@@ -2,9 +2,15 @@ import { useState } from 'react'
 import { getProductLaunchPrice } from '../lib/constants'
 import { useShop } from '../context/ShopContext'
 import { createOrder } from '../services/orders'
+import {
+  createCashfreePaymentSession,
+  launchCashfreeCheckout,
+  verifyCashfreeOrder,
+} from '../services/cashfree'
 
 const emptyCustomerForm = {
   fullName: '',
+  email: '',
   address: '',
   contactNumber: '',
   city: '',
@@ -16,95 +22,107 @@ const emptyCustomerForm = {
 export default function CartPage() {
   const { cartItems, updateCartItem, removeFromCart, clearCart, addToMyOrders } = useShop()
   const [customerForm, setCustomerForm] = useState(emptyCustomerForm)
-  const [customerUpiId, setCustomerUpiId] = useState('')
-  const [upiError, setUpiError] = useState('')
-  const [paymentInitiated, setPaymentInitiated] = useState(false)
-  const [paymentUtr, setPaymentUtr] = useState('')
+  const [paymentError, setPaymentError] = useState('')
   const [pendingOrderId, setPendingOrderId] = useState('')
   const [orderStatus, setOrderStatus] = useState('idle')
   const [orderId, setOrderId] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
-
-  const receiverUpiId = import.meta.env.VITE_UPI_RECEIVER_ID || 'vency1238@okaxis'
-  const receiverUpiName = import.meta.env.VITE_UPI_RECEIVER_NAME || 'In Between'
 
   const total = cartItems.reduce(
     (sum, item) => sum + item.quantity * getProductLaunchPrice(item),
     0,
   )
 
-  function handleUpiPayment(event) {
-    event.preventDefault()
-
+  function validateCheckoutForm() {
     const fullName = customerForm.fullName.trim()
+    const email = customerForm.email.trim()
     const address = customerForm.address.trim()
     const contactNumber = customerForm.contactNumber.trim()
     const city = customerForm.city.trim()
     const state = customerForm.state.trim()
     const pincode = customerForm.pincode.trim()
-    const trimmedCustomerUpiId = customerUpiId.trim()
-    const isValidUpi = /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(trimmedCustomerUpiId)
 
-    if (!fullName || !address || !contactNumber || !city || !state || !pincode) {
-      setUpiError('Please fill full name, address, contact number, city, state, and pincode.')
-      return
+    if (!fullName || !email || !address || !contactNumber || !city || !state || !pincode) {
+      return 'Please fill full name, email, address, contact number, city, state, and pincode.'
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Enter a valid email address.'
     }
 
     if (!/^\d{10,14}$/.test(contactNumber)) {
-      setUpiError('Enter a valid contact number (10 to 14 digits).')
-      return
+      return 'Enter a valid contact number (10 to 14 digits).'
     }
 
     if (!/^\d{6}$/.test(pincode)) {
-      setUpiError('Enter a valid 6-digit pincode.')
-      return
-    }
-
-    if (!isValidUpi) {
-      setUpiError('Please enter your valid UPI ID (example: name@bank).')
-      return
-    }
-
-    if (!receiverUpiId) {
-      setUpiError('Payment receiver UPI ID is not configured. Please contact support.')
-      return
+      return 'Enter a valid 6-digit pincode.'
     }
 
     if (total <= 0) {
-      setUpiError('Cart total must be greater than zero to proceed.')
-      return
+      return 'Cart total must be greater than zero to proceed.'
     }
 
-    setUpiError('')
-    const generatedOrderId = `IB${Date.now().toString().slice(-8)}`
-    const amount = total.toFixed(2)
-    const note = `In Between Order ${generatedOrderId} | Payer ${trimmedCustomerUpiId}`
-    const upiUrl = `upi://pay?pa=${encodeURIComponent(receiverUpiId)}&pn=${encodeURIComponent(
-      receiverUpiName,
-    )}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(note)}`
-
-    setPendingOrderId(generatedOrderId)
-    setPaymentInitiated(true)
-
-    // Open a real UPI payment intent in installed UPI apps.
-    window.location.href = upiUrl
+    return ''
   }
 
-  async function handleConfirmPayment(event) {
-    event.preventDefault()
-    const trimmedUtr = paymentUtr.trim()
+  async function waitForPaidOrder(cashfreeOrderId) {
+    let latest = null
 
-    if (!/^[a-zA-Z0-9]{8,40}$/.test(trimmedUtr)) {
-      setUpiError('Enter a valid UTR/transaction reference (8-40 letters or numbers).')
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      latest = await verifyCashfreeOrder(cashfreeOrderId)
+
+      if (latest.status === 'PAID') {
+        return latest
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 2000)
+      })
+    }
+
+    return latest
+  }
+
+  async function handleCashfreePayment(event) {
+    event.preventDefault()
+    const validationError = validateCheckoutForm()
+
+    if (validationError) {
+      setPaymentError(validationError)
       return
     }
 
+    setPaymentError('')
     setPlacingOrder(true)
-    setUpiError('')
+    const generatedOrderId = `IB${Date.now().toString().slice(-8)}`
+    setPendingOrderId(generatedOrderId)
 
     try {
+      const cashfreeSession = await createCashfreePaymentSession({
+        orderCode: generatedOrderId,
+        amount: total,
+        customer: {
+          name: customerForm.fullName.trim(),
+          email: customerForm.email.trim(),
+          phone: customerForm.contactNumber.trim(),
+        },
+      })
+
+      const checkoutResult = await launchCashfreeCheckout(cashfreeSession.paymentSessionId)
+      if (checkoutResult?.error) {
+        throw new Error(checkoutResult.error.message || 'Cashfree checkout failed to start.')
+      }
+
+      const verifiedOrder = await waitForPaidOrder(cashfreeSession.orderId)
+      if (!verifiedOrder || verifiedOrder.status !== 'PAID') {
+        setPaymentError(
+          'Payment is not confirmed yet. If amount was debited, wait a minute and try again.',
+        )
+        return
+      }
+
       const savedOrder = await createOrder({
-        orderCode: pendingOrderId,
+        orderCode: generatedOrderId,
         fullName: customerForm.fullName.trim(),
         address: customerForm.address.trim(),
         contactNumber: customerForm.contactNumber.trim(),
@@ -112,22 +130,19 @@ export default function CartPage() {
         state: customerForm.state.trim(),
         pincode: customerForm.pincode.trim(),
         orderNote: customerForm.orderNote.trim(),
-        customerUpiId: customerUpiId.trim(),
-        paymentUtr: trimmedUtr,
+        customerUpiId: 'cashfree',
+        paymentUtr: verifiedOrder.paymentId || verifiedOrder.orderId,
         totalAmount: total,
         items: cartItems,
       })
 
       addToMyOrders(savedOrder)
-      setOrderId(pendingOrderId)
+      setOrderId(generatedOrderId)
       setOrderStatus('success')
-      setPaymentInitiated(false)
-      setPaymentUtr('')
-      setCustomerUpiId('')
       setCustomerForm(emptyCustomerForm)
       clearCart()
     } catch (saveError) {
-      setUpiError(saveError.message || 'Unable to save your order. Please try again.')
+      setPaymentError(saveError.message || 'Unable to process payment. Please try again.')
     } finally {
       setPlacingOrder(false)
     }
@@ -206,7 +221,7 @@ export default function CartPage() {
             <p className="text-lg text-bark-700">Total</p>
             <p className="mt-1 text-3xl font-bold text-bark-900">₹{total}</p>
 
-            <form className="mt-5 space-y-3" onSubmit={handleUpiPayment}>
+            <form className="mt-5 space-y-3" onSubmit={handleCashfreePayment}>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-bark-700">Full Name</span>
                 <input
@@ -216,6 +231,19 @@ export default function CartPage() {
                     setCustomerForm((prev) => ({ ...prev, fullName: event.target.value }))
                   }
                   placeholder="Enter your full name"
+                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-bark-700">Email</span>
+                <input
+                  type="email"
+                  value={customerForm.email}
+                  onChange={(event) =>
+                    setCustomerForm((prev) => ({ ...prev, email: event.target.value }))
+                  }
+                  placeholder="Enter your email"
                   className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
                 />
               </label>
@@ -300,52 +328,26 @@ export default function CartPage() {
                 />
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-bark-700">Your UPI ID</span>
-                <input
-                  type="text"
-                  value={customerUpiId}
-                  onChange={(event) => setCustomerUpiId(event.target.value)}
-                  placeholder="Enter your UPI ID (example@bank)"
-                  className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
-                />
-              </label>
+              {paymentError && <p className="text-sm text-red-700">{paymentError}</p>}
 
-              {upiError && <p className="text-sm text-red-700">{upiError}</p>}
+              <p className="text-xs text-bark-600">
+                Payments are processed securely via Cashfree test environment.
+              </p>
 
               <button
                 type="submit"
+                disabled={placingOrder}
                 className="rounded-full bg-bark-900 px-5 py-2 text-sm font-semibold text-cream-100 transition hover:bg-bark-800 disabled:cursor-not-allowed disabled:bg-bark-500"
               >
-                Proceed Payment
+                {placingOrder ? 'Processing...' : 'Pay with Cashfree'}
               </button>
             </form>
 
-            {paymentInitiated && (
-              <form className="mt-5 space-y-3 rounded-xl border border-beige-300 bg-white p-4" onSubmit={handleConfirmPayment}>
-                <p className="text-sm text-bark-700">
-                  UPI app opened for Order ID <span className="font-semibold">{pendingOrderId}</span>.
-                  Complete the payment, then enter your UTR/transaction reference below.
-                </p>
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-bark-700">UTR / Transaction Reference</span>
-                  <input
-                    type="text"
-                    value={paymentUtr}
-                    onChange={(event) => setPaymentUtr(event.target.value)}
-                    placeholder="Example: 1234567890ABC"
-                    className="w-full rounded-xl border border-beige-400 bg-white px-3 py-2 text-sm text-bark-900 outline-none ring-bark-600 transition focus:ring-2"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={placingOrder}
-                  className="rounded-full bg-emerald-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
-                >
-                  {placingOrder ? 'Saving order...' : 'Confirm Order'}
-                </button>
-              </form>
-            )}
+            {pendingOrderId ? (
+              <p className="mt-4 text-sm text-bark-700">
+                Current checkout order ID: <span className="font-semibold">{pendingOrderId}</span>
+              </p>
+            ) : null}
           </div>
         </>
       )}
