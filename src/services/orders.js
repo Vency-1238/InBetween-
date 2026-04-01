@@ -47,6 +47,11 @@ function buildOrderItems(items) {
 export async function createOrder(orderInput) {
   assertOrdersCollectionConfig()
 
+  const rawPincode = String(orderInput?.pincode ?? '').trim()
+  if (!/^\d{6}$/.test(rawPincode)) {
+    throw new Error('Enter a valid 6-digit pincode.')
+  }
+
   const items = buildOrderItems(orderInput.items || [])
   const document = await databases.createDocument(databaseId, ordersCollectionId, ID.unique(), {
     orderCode: orderInput.orderCode,
@@ -55,7 +60,7 @@ export async function createOrder(orderInput) {
     contactNumber: orderInput.contactNumber,
     city: orderInput.city,
     state: orderInput.state,
-    pincode: orderInput.pincode,
+    pincode: toInteger(rawPincode, 0),
     orderNote: orderInput.orderNote || '',
     customerUpiId: orderInput.customerUpiId,
     paymentUtr: orderInput.paymentUtr,
