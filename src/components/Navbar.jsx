@@ -24,7 +24,6 @@ export default function Navbar() {
     { to: '/wishlist', label: `Wishlist (${wishlistItems.length})` },
     { to: '/cart', label: `Cart (${cartCount})` },
     { to: '/my-orders', label: `My Orders (${myOrdersCount})` },
-    { to: '/admin/login', label: 'Admin' },
   ]
 
   useEffect(() => {

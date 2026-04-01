@@ -31,6 +31,7 @@ function App() {
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/my-orders" element={<MyOrdersPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
               <Route element={<AdminRoute />}>
