@@ -8,7 +8,7 @@ import {
   updateProduct,
   uploadProductImage,
 } from '../services/products'
-import { fetchAllOrders } from '../services/orders'
+import { fetchAllOrders, removeOrder } from '../services/orders'
 import { notifyProductsChanged } from '../lib/productSync'
 import { toInteger } from '../lib/constants'
 
@@ -182,6 +182,19 @@ export default function AdminDashboardPage() {
       await loadProducts()
     } catch (deleteError) {
       setError(deleteError.message || 'Unable to delete product.')
+    }
+  }
+
+  async function onDeleteOrder(order) {
+    setOrdersError('')
+    setFeedback('')
+
+    try {
+      await removeOrder(order.$id)
+      setFeedback('Order deleted successfully.')
+      await loadOrders()
+    } catch (deleteError) {
+      setOrdersError(deleteError.message || 'Unable to delete order.')
     }
   }
 
@@ -411,6 +424,16 @@ export default function AdminDashboardPage() {
                       <span className="font-semibold text-bark-900">Order Note:</span> {order.orderNote}
                     </p>
                   ) : null}
+                </div>
+
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onDeleteOrder(order)}
+                    className="rounded-full bg-bark-900 px-4 py-2 text-sm font-semibold text-cream-100"
+                  >
+                    Delete Order
+                  </button>
                 </div>
 
                 <div className="mt-3 rounded-xl border border-beige-300 bg-cream-100 p-3">

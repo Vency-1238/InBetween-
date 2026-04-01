@@ -77,3 +77,9 @@ export async function fetchAllOrders() {
 
   return response.documents.map((doc) => normalizeOrder(doc))
 }
+
+export async function removeOrder(orderId) {
+  assertOrdersCollectionConfig()
+
+  return databases.deleteDocument(databaseId, ordersCollectionId, orderId)
+}

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { fetchAllProducts } from '../services/products'
 import { useShop } from '../context/ShopContext'
 import { getProductLaunchPrice, toInteger, getProductLaunchBadgeText } from '../lib/constants'
-import { subscribeProductsChanged } from '../lib/productSync'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -18,8 +17,6 @@ export default function ProductDetailPage() {
 
     async function loadProduct() {
       try {
-        setError('')
-        setLoading(true)
         const allProducts = await fetchAllProducts()
         const foundProduct = allProducts.find((p) => p.$id === id)
         
@@ -42,11 +39,9 @@ export default function ProductDetailPage() {
     }
 
     loadProduct()
-    const unsubscribe = subscribeProductsChanged(loadProduct)
 
     return () => {
       mounted = false
-      unsubscribe()
     }
   }, [id])
 
